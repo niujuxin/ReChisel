@@ -1,0 +1,34 @@
+# SBT specific
+target/
+lib_managed/
+src_managed/
+.project
+.cache
+.history
+.ensime
+.ensime_cache
+.idea
+.DS_Store
+*.class
+*.log
+*.lock
+*.tmp
+
+# IntelliJ specific
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# Mac specific
+.DS_Store
+
+# Chisel3 specific
+.vscode/
+test_run_dir/
+
+# Chisel3 generated files
+generated/
+
+!build.sbt
+!src
