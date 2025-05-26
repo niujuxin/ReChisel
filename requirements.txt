@@ -1,0 +1,11 @@
+aiofiles
+azure_storage
+boto3
+botocore
+langchain_aws
+langchain_core
+langchain_deepseek
+langchain_google_vertexai
+langchain_openai
+psutil
+pydantic
