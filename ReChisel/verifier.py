@@ -4,7 +4,7 @@ import re
 from typing import Literal
 import shutil
 
-from ReChisel.benchmark import BenchmarkCase
+from ReChisel.testcase import Testcase
 from ReChisel.chisel_code import ChiselCode
 from ReChisel.utils import run_command
 
@@ -30,7 +30,7 @@ class VerifyResult:
 
 
 class VerifierWorkingSpace:
-    def __init__(self, chisel_dir: str, iv_dir: str, *, sbt_build_path: str = 'build.sbt'):
+    def __init__(self, chisel_dir: str | Path, iv_dir: str | Path, *, sbt_build_path: str | Path = 'build.sbt'):
         self.chisel_dir = Path(chisel_dir)
         self.iv_dir = Path(iv_dir)
         self.sbt_build_path = Path(sbt_build_path)
@@ -49,18 +49,6 @@ class VerifierWorkingSpace:
             shutil.copy2(self.sbt_build_path, target_sbt)
 
 
-def sbtout_clean(sbtout: str):
-    # Remove the empty lines and all lines begin with `\s*| =>`
-    sbtout = re.sub(r'^\s*\| =>.*\n', '', sbtout, flags=re.MULTILINE)
-    sbtout = "\n".join(
-        [line for line in sbtout.split('\n') if line.strip()]
-    )
-    # Remove all [info] lines and [warn] lines
-    sbtout = re.sub(r'^\s*\[info\].*\n', '', sbtout, flags=re.MULTILINE)
-    sbtout = re.sub(r'^\s*\[warn\].*\n', '', sbtout, flags=re.MULTILINE)
-    return sbtout
-
-
 class Verifier:
     def __init__(
             self, 
@@ -74,25 +62,46 @@ class Verifier:
     def result(self):
         return self._result
 
-    def prepare(self, code: ChiselCode, bmcase: BenchmarkCase):
+    def prepare(self, code: ChiselCode, testcase: Testcase):
         self._result = VerifyResult()
         
-        chisel_code_target_path = self._working_space.chisel_dir / "src/main/scala/Main.scala"
-        chisel_code_target_path.parent.mkdir(parents=True, exist_ok=True)
-        chisel_code_target_path.touch()
-        chisel_code_target_path.write_text(code.decorated)
+        # Build Chisel's compiler env.
+        chisel_code_path = self._working_space.chisel_dir / "src/main/scala/Main.scala"
+        chisel_code_path.parent.mkdir(parents=True, exist_ok=True)
+        chisel_code_path.touch()
+        chisel_code_path.write_text(code.decorated, encoding='utf-8')
         
-        bmcase.prepare_iv(self._working_space.iv_dir)
+        # Move the reference code and testbench code to IV's working directory. 
+        self._working_space.iv_dir.mkdir(parents=True, exist_ok=True)
+        files_to_write = [
+            (testcase.reference_code, f'{testcase.prob_id}_ref.sv'),
+            (testcase.testbench_code, f'{testcase.prob_id}_tb.sv')
+        ]
+        for content, filename in files_to_write:
+            if content:
+                target_file = self._working_space.iv_dir / filename
+                target_file.write_text(content, encoding='utf-8')
         
         return True
     
+    @staticmethod
+    def sbtout_clean(sbtout: str):
+        # Remove the empty lines and all lines begin with `\s*| =>`
+        sbtout = re.sub(r'^\s*\| =>.*\n', '', sbtout, flags=re.MULTILINE)
+        sbtout = "\n".join(
+            [line for line in sbtout.split('\n') if line.strip()]
+        )
+        # Remove all [info] lines and [warn] lines
+        sbtout = re.sub(r'^\s*\[info\].*\n', '', sbtout, flags=re.MULTILINE)
+        sbtout = re.sub(r'^\s*\[warn\].*\n', '', sbtout, flags=re.MULTILINE)
+        return sbtout
+
     def compile(self):
         sbt_returncode, sbt_out, _ = run_command(
             'sbt run', workingdir=self._working_space.chisel_dir
         )
-        
         if sbt_returncode != 0:
-            self._result.sbt_error = sbtout_clean(sbt_out)
+            self._result.sbt_error = self.sbtout_clean(sbt_out)
             return False
         
         self._result.sbt_success = True

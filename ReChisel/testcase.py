@@ -2,7 +2,7 @@ from pathlib import Path
 from functools import cached_property
 from typing import Optional
 
-class BenchmarkCase:
+class Testcase:
     def __init__(
         self, 
         prob_id: str, 

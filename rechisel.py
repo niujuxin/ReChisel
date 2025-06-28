@@ -2,7 +2,7 @@
 from pathlib import Path
 from langchain_core.messages import HumanMessage, SystemMessage
 
-from ReChisel.benchmark import BenchmarkCase
+from ReChisel.testcase import Testcase
 from ReChisel.llms import get_llm_client, llm_call_with_retry
 from ReChisel.chisel_code import ChiselCode
 
@@ -26,7 +26,7 @@ class Prompts:
     functionality_correction = Path('prompts/functionality_correction.txt').read_text(encoding='utf-8')
 
 
-def initial_chisel_generation(bmcase: BenchmarkCase, top_module_name: str) -> ChiselCode:
+def initial_chisel_generation(bmcase: Testcase, top_module_name: str) -> ChiselCode:
     messages = [
         SystemMessage(Prompts.chisel_generation),
         HumanMessage(bmcase.specification)

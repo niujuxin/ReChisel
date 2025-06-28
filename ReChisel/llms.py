@@ -28,40 +28,25 @@ class BedrockClaudeClient(ChatBedrock):
             'claude-3.5-haiku': 'us.anthropic.claude-3-5-haiku-20241022-v1:0',
         }
 
-        # Validate AWS credentials
-        aws_access_key_id = self._get_required_env_var("AWS_ACCESS_KEY_ID")
-        aws_secret_access_key = self._get_required_env_var("AWS_SECRET_ACCESS_KEY")
-        
-        # Build model kwargs efficiently
-        model_kwargs = {
-            key: value for key, value in {
-                'temperature': temperature,
-                'top_k': top_k,
-                'top_p': top_p
-            }.items() if value is not None
-        }
-
         super().__init__(
             model_id=MODEL_ID_MAPPING[model],
             region=region,
             streaming=streaming,
-            aws_access_key_id=aws_access_key_id,
-            aws_secret_access_key=aws_secret_access_key,
+            aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+            aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
             max_tokens=max_tokens,
-            model_kwargs=model_kwargs,
+            model_kwargs={
+                key: value for key, value in {
+                    'temperature': temperature,
+                    'top_k': top_k,
+                    'top_p': top_p
+                }.items() if value is not None
+            },
             config=botocore.config.Config(
                 connect_timeout=30,
                 read_timeout=12000,
             )
         )
-    
-    @staticmethod
-    def _get_required_env_var(var_name: str) -> str:
-        """Get required environment variable or raise ValueError."""
-        value = os.getenv(var_name)
-        if value is None:
-            raise ValueError(f"{var_name} is not set for BedrockClaudeClient.")
-        return value
 
 
 class OpenAIClient(ChatOpenAI):
