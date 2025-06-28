@@ -4,9 +4,9 @@ import re
 from typing import Literal
 import shutil
 
-from benchmark import BenchmarkCase
-from rechisel_chisel import ChiselCode
-from utils import run_command
+from ReChisel.benchmark import BenchmarkCase
+from ReChisel.chisel_code import ChiselCode
+from ReChisel.utils import run_command
 
 
 @dataclass
@@ -21,7 +21,7 @@ class VerifyResult:
     # vvp()
     vvp_success: bool = False
     vvp_output: str = ''
-    # func_verilog_eval()
+    # func_verilog_eval() or func_autochip()
     functionality_correct: bool = False
 
     @property
@@ -158,7 +158,7 @@ class Verifier:
         )
         return False
 
-    def func_verilog_eval(self):
+    def _func_verilog_eval(self):
         mismatch_pattern = re.compile(r'Mismatches: (\d+) in (\d+) samples')
         match = mismatch_pattern.search(self._result.vvp_output)
         
@@ -170,15 +170,15 @@ class Verifier:
         self._result.functionality_correct = is_correct
         return is_correct
 
-    def func_autochip(self):
+    def _func_autochip(self):
         is_correct = "All tests passed!" in self._result.vvp_output
         self._result.functionality_correct = is_correct
         return is_correct
 
     def functionality(self):
         if self._benchmark == 'autochip':
-            return self.func_autochip()
+            return self._func_autochip()
         elif self._benchmark == 'verilog-eval':
-            return self.func_verilog_eval()
+            return self._func_verilog_eval()
         else:
             return False

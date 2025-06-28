@@ -10,11 +10,10 @@ import botocore.config
 
 
 class BedrockClaudeClient(ChatBedrock):
-    """Bedrock Claude client with simplified initialization."""
     
     def __init__(
         self, 
-        model: Literal['claude-3.5-haiku', 'claude-3.5-sonnet-v2'],
+        model: str,
         *,
         region: str = 'us-west-2',
         streaming: bool = False, 
@@ -70,7 +69,7 @@ class OpenAIClient(ChatOpenAI):
     
     def __init__(
         self, 
-        model: Literal['gpt-4o', 'gpt-4o-mini', 'o1', 'o1-mini', 'o3-mini'], 
+        model: str, 
         *,
         streaming: bool = False, 
         temperature: Optional[float] = None,
@@ -91,6 +90,58 @@ class OpenAIClient(ChatOpenAI):
             base_url=base_url or os.getenv("OPENAI_BASE_URL"),
             openai_proxy=proxy or os.getenv("OPENAI_PROXY"),
         )
+
+
+
+@lru_cache()
+def get_llm_client(model: str, **kwargs) -> Union[OpenAIClient, BedrockClaudeClient]:
+
+    MODEL_GROUPS = {
+        'openai': ['gpt-4o', 'gpt-4o-mini', 'gpt-4.1'],
+        'claude': ['claude-3.5-haiku', 'claude-3.5-sonnet-v2'],
+    }
+
+    CLIENT_CLASSES = {
+        'openai': OpenAIClient,
+        'claude': BedrockClaudeClient,
+    }
+
+    for group, models in MODEL_GROUPS.items():
+        if model in models:
+            client_class = CLIENT_CLASSES[group]
+            return client_class(model=model, **kwargs)
+    
+    raise ValueError(f"Model '{model}' is not supported.")
+
+
+class LLMAPICallError(RuntimeError):
+    """Exception raised when LLM API calls fail after retries."""
+    pass
+
+
+def llm_call_with_retry(
+    client: OpenAIClient | BedrockClaudeClient,
+    messages: list[HumanMessage | SystemMessage | AIMessage],
+    *,
+    retry: int = 16,
+    wait_after_retry: float = 0.2
+):
+    """Call LLM with retry logic on failure."""
+    last_exception = None
+    
+    for attempt in range(1, retry + 1):
+        try:
+            return client.invoke(messages)
+        except Exception as e:
+            last_exception = e
+            if attempt == retry:
+                break
+            sleep(wait_after_retry)
+    
+    raise LLMAPICallError(
+        f"Error calling LLM: Retry limit reached with last error: {last_exception}"
+    ) from last_exception
+
 
 
 def lcmsg_to_msg(lcmsg: list[BaseMessage], accept_system: bool = True) -> list[dict]:
@@ -130,88 +181,3 @@ def msg_to_lcmsg(messages: list[dict]) -> list[BaseMessage]:
     ]
 
 
-SupportedModelList = Literal[
-    'gpt-4o', 'gpt-4o-mini',
-    'claude-3.5-haiku', 'claude-3.5-sonnet-v2',
-]
-
-# Model to client mapping
-MODEL_CLIENT_MAPPING = {
-    'gpt-4o': OpenAIClient,
-    'gpt-4o-mini': OpenAIClient,
-    'claude-3.5-haiku': BedrockClaudeClient,
-    'claude-3.5-sonnet-v2': BedrockClaudeClient,
-}
-
-
-@lru_cache()
-def get_llm_client(model: SupportedModelList, **kwargs) -> Union[OpenAIClient, BedrockClaudeClient]:
-    """Get LLM client instance for the specified model.
-    
-    Args:
-        model: The model name from supported models list
-        **kwargs: Additional arguments to pass to the client constructor
-        
-    Returns:
-        Configured client instance for the specified model
-        
-    Raises:
-        ValueError: If the model is not supported
-    """
-    if model not in MODEL_CLIENT_MAPPING:
-        raise ValueError(f"Model '{model}' is not supported. "
-                        f"Supported models: {list(MODEL_CLIENT_MAPPING.keys())}")
-    
-    client_class = MODEL_CLIENT_MAPPING[model]
-    return client_class(model=model, **kwargs)
-
-
-# Alternative implementation with model groups for better scalability
-MODEL_GROUPS = {
-    'openai': ['gpt-4o', 'gpt-4o-mini'],
-    'claude': ['claude-3.5-haiku', 'claude-3.5-sonnet-v2'],
-}
-
-CLIENT_CLASSES = {
-    'openai': OpenAIClient,
-    'claude': BedrockClaudeClient,
-}
-
-@lru_cache()
-def get_llm_client(model: SupportedModelList, **kwargs) -> Union[OpenAIClient, BedrockClaudeClient]:
-    """Alternative implementation using model groups."""
-    for group, models in MODEL_GROUPS.items():
-        if model in models:
-            client_class = CLIENT_CLASSES[group]
-            return client_class(model=model, **kwargs)
-    
-    raise ValueError(f"Model '{model}' is not supported.")
-
-
-class LLMAPICallError(RuntimeError):
-    """Exception raised when LLM API calls fail after retries."""
-    pass
-
-
-def llm_call_with_retry(
-    client: OpenAIClient | BedrockClaudeClient,
-    messages: list[HumanMessage | SystemMessage | AIMessage],
-    *,
-    retry: int = 128,
-    wait_after_retry: float = 0.5
-):
-    """Call LLM with retry logic on failure."""
-    last_exception = None
-    
-    for attempt in range(1, retry + 1):
-        try:
-            return client.invoke(messages)
-        except Exception as e:
-            last_exception = e
-            if attempt == retry:
-                break
-            sleep(wait_after_retry)
-    
-    raise LLMAPICallError(
-        f"Error calling LLM: Retry limit reached with last error: {last_exception}"
-    ) from last_exception

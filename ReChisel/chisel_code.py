@@ -26,7 +26,7 @@ class ChiselCode:
         chunks = re.findall(r'```scala', self._llm_response)
         # Raise error if no scala code block is found.
         if len(chunks) < 1:
-            return ""
+            raise ValueError(f"Error: Scala code block is not found.")
         
         code_blocks = list()
         for match in re.finditer(r'```scala', self._llm_response):

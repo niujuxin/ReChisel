@@ -2,9 +2,9 @@
 from pathlib import Path
 from langchain_core.messages import HumanMessage, SystemMessage
 
-from benchmark import BenchmarkCase
-from llms import get_llm_client, llm_call_with_retry
-from rechisel_chisel import ChiselCode
+from ReChisel.benchmark import BenchmarkCase
+from ReChisel.llms import get_llm_client, llm_call_with_retry
+from ReChisel.chisel_code import ChiselCode
 
 
 class ModelSelection:
