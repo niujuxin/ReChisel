@@ -1,6 +1,18 @@
+from dataclasses import dataclass
 import re
 import subprocess
 from typing import Tuple, Optional, Union
+
+
+@dataclass
+class CommandExecResult:
+    return_code: int
+    stdout: str
+    stderr: str
+
+    @property
+    def is_ok(self):
+        return self.return_code == 0
 
 
 def run_command(
@@ -12,9 +24,9 @@ def run_command(
     use_shell: bool = False,
     env: Optional[dict] = None,
     timeout: Optional[int] = None,
-) -> Tuple[int, str, str]:
+) -> CommandExecResult:
     """
-    Runs a command synchronously and returns (returncode, stdout, stderr), 
+    Runs a command synchronously and returns CommandExecResult instance, 
     with ANSI escape sequences removed. Optionally raises an exception if
     the return code is not zero.
 
@@ -30,7 +42,7 @@ def run_command(
         timeout: Timeout in seconds; if exceeded, a TimeoutExpired exception is raised (default: None).
 
     Returns:
-        A tuple (returncode, stdout, stderr) for the command executed.
+        An instance of CommandExecResult for the command executed.
 
     Raises:
         subprocess.CalledProcessError: If raise_on_error is True and the command 
@@ -61,4 +73,8 @@ def run_command(
     stdout_clean = ansi_escape.sub('', result.stdout if result.stdout else '')
     stderr_clean = ansi_escape.sub('', result.stderr if result.stderr else '')
 
-    return result.returncode, stdout_clean, stderr_clean
+    return CommandExecResult(
+        return_code=result.returncode,
+        stdout=stdout_clean,
+        stderr=stderr_clean
+    )
