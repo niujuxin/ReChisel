@@ -93,5 +93,6 @@ def in_context_attempt_history_format(
         "Below are the most recent consecutive k attempts trying to implement this Chisel module. "
         "For each attempt, the corresponding code is provided along with a summary "
         "of the errors found in that version and the suggested modifications. \n\n"
+        "NOTE: Please refer to these past attempts to avoid repeating the same mistakes.\n\n"
         + "\n".join(traces)
     )
