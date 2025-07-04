@@ -21,6 +21,14 @@ class Attempt:
         self.reviewer_response = reviewer_response
         self._llm_summary = llm_summary
 
+    def to_dict(self):
+        return {
+            "chisel_code": self.chisel_code.raw_stripped if self.chisel_code else None,
+            "verify_result": self.verify_result.__dict__() if self.verify_result else None,
+            "reviewer_response": self.reviewer_response.content if self.reviewer_response else None,
+            "llm_summary": self._llm_summary
+        }
+
     @property
     def summary(self):
         if self._llm_summary is None:
