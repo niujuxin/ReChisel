@@ -4,6 +4,8 @@ import re
 from typing import Literal
 import shutil
 
+from langchain_core.messages import HumanMessage
+
 from ReChisel.testcase import Testcase
 from ReChisel.chisel_code import ChiselCode
 from ReChisel.utils import CommandExecResult, run_command
@@ -56,12 +58,14 @@ class VerifyResult:
 class VerifierWorkingSpace:
     def __init__(self, chisel_dir: str | Path, iv_dir: str | Path, *, sbt_build_path: str | Path = 'build.sbt'):
 
-        # Create directories if they don't exist
+        # Clear the directories and re-create them
         self.chisel_dir = Path(chisel_dir)
-        self.chisel_dir.mkdir(parents=True, exist_ok=True)
         self.iv_dir = Path(iv_dir)
+        shutil.rmtree(self.chisel_dir, ignore_errors=True)
+        shutil.rmtree(self.iv_dir, ignore_errors=True)
+        self.chisel_dir.mkdir(parents=True, exist_ok=True)
         self.iv_dir.mkdir(parents=True, exist_ok=True)
-        
+
         # Copy sbt build file to chisel dir
         # Make sure the sbt build file exists
         sbt_build_path = Path(sbt_build_path)
@@ -198,6 +202,18 @@ class Verifier:
             ['vvp', output_fname], workingdir=self._working_space.iv_dir
         )
         self._log(f"VVP command executed with return code: {self._result.vvp_cmd_exec_result.return_code}")
+
+        if not self._result.vvp_cmd_exec_result.is_ok:
+            # TODO: `vvp` always runs successfully if the binary is generated successfully 
+            # (i.e., 'verilog_compile_success` is True).
+            # Therefore, `run_verilog_sim_success` is always True if `verilog_compile_success` is True.
+            # We have not observed any exceptions.
+            raise RuntimeError(
+                "Verilog simulation (vvp) execution failed. \n"
+                f"STDOUT: {self._result.vvp_cmd_exec_result.stdout}\n"
+                f"STDERR: {self._result.vvp_cmd_exec_result.stderr}\n"
+            )
+
         return self._result.run_verilog_sim_success
 
     def functionality_eval(self, bm_type: Literal['autochip', 'verilog-eval']):
@@ -218,3 +234,75 @@ class Verifier:
         self._log(f"Functionality evaluation result: {'Correct' if is_correct else 'Incorrect'}")
         self._result.functionality_correct = is_correct
         return is_correct
+
+
+def verify(
+        code: ChiselCode, bmcase: Testcase, output_dir: Path, bm_type: str,
+        *, verbose: bool = False
+) -> VerifyResult:
+
+    # Create working space for the verifier
+    working_space = VerifierWorkingSpace(output_dir / 'chisel', output_dir / 'iv')
+    # Initialize the verifier
+    verifier = Verifier(working_space, verbose=verbose)
+
+    _ = (
+        verifier.prepare(code, bmcase) and
+        verifier.chisel_compile_to_verilog() and
+        verifier.verilog_compile() and
+        verifier.run_verilog_sim() and
+        verifier.functionality_eval(bm_type=bm_type)
+    )
+    return verifier.result
+
+
+def collect_verify_feedback(
+        testcase: Testcase,
+        verify_result: VerifyResult,
+        chisel_code: ChiselCode
+) -> HumanMessage:
+
+    def __format_cmd_exec_message(cmd_exec_result: CommandExecResult) -> str:
+        if cmd_exec_result.is_ok:
+            return f"Command executed successfully"
+        else:
+            return (
+                f"rtncode: {cmd_exec_result.return_code}\n\n"
+                f"stdout: \n{cmd_exec_result.stdout}\n\n"
+                f"stderr: \n{cmd_exec_result.stderr}\n"
+            )
+
+
+    # The Chisel code has syntax errors and is unable to compile to Verilog.
+    if not verify_result.chisel_compile_to_verilog_success:
+        return HumanMessage(
+            f"# Specification:\n\n"
+            f"```\n{testcase.specification}\n```\n\n"
+            f"# Chisel code:\n\n"
+            f"```\n{chisel_code.raw}\n```\n\n"
+            f"# Chisel compilation (`sbt` command) error messages:\n\n"
+            f"```\n{__format_cmd_exec_message(verify_result.sbt_cmd_exec_result)}\n```\n\n"
+        )
+    # The Chisel code is able to compile to Verilog, but the Verilog code is incompatible with other codes and unable to compile.
+    elif not verify_result.verilog_compile_success:
+        return HumanMessage(
+            f"# Specification:\n\n"
+            f"```\n{testcase.specification}\n```\n\n"
+            f"# Chisel code:\n\n"
+            f"```\n{chisel_code.raw}\n```\n\n"
+            f"# Verilog compilation (`iverilog` command) error messages:\n\n"
+            f"```\n{__format_cmd_exec_message(verify_result.iv_cmd_exec_result)}\n```\n\n"
+        )
+    # The Verilog code is able to compile and run, but the functionality is incorrect.
+    elif not verify_result.functionality_correct:
+        return HumanMessage(
+            f"# Specification:\n\n"
+            f"```\n{testcase.specification}\n```\n\n"
+            f"# Chisel code:\n\n"
+            f"```\n{chisel_code.raw}\n```\n\n"
+            # TODO: For functional errors, the current benchmark simulation result only points out that 
+            # the function point is inconsistent, but does not provide more information about the error. 
+            # Therefore, there is no meaningful feedback for functional errors.
+        )
+    else:
+        raise ValueError("Unexpected verification result: functionality_correct is True, the code should not reach here.")

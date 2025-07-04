@@ -35,3 +35,14 @@ class Testcase:
     @cached_property
     def testbench_code(self) -> str:
         return self._read_file_safe(self._testbench_dir)
+
+    def __str__(self) -> str:
+        return (
+            f"Testcase(prob_id={self.prob_id}, "
+            f"specification_dir={self._specification_dir}, "
+            f"reference_dir={self._reference_dir}, "
+            f"testbench_dir={self._testbench_dir})"
+        )
+    
+    def __repr__(self) -> str:
+        return self.__str__()
