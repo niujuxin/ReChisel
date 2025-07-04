@@ -47,7 +47,7 @@ Before you begin, ensure you have the following tools installed on your system.
 Clone the repository and install the required Python dependencies:
 
 ```bash
-git clone https://github.com/your-username/ReChisel.git
+git clone git@github.com:niujuxin/ReChisel.git
 cd ReChisel
 pip install -r requirements.txt
 ```
