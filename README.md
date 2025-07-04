@@ -29,22 +29,19 @@ ReChisel is a system that enhances Large Language Models (LLMs) for hardware des
 
 ### Prerequisites
 
-Before you begin, ensure you have the following tools installed on your system.
+Install Tools:
 
 1.  **SBT (Simple Build Tool for Scala)**
     *   **Purpose:** Used to compile Chisel code into Verilog.
-    *   **Official Website:** [scala-sbt.org](https://www.scala-sbt.org/)
+    *   **Website:** [scala-sbt.org](https://www.scala-sbt.org/)
     *   **Chisel Installation Guide:** [Chisel Docs: Installing with SBT](https://www.chisel-lang.org/docs/installation#sbt)
     *   *Note: This project is configured with `build.sbt` to manage Chisel dependencies.*
 
 2.  **Icarus Verilog**
     *   **Purpose:** Used to compile and simulate the generated Verilog code for functional verification.
-    *   **Official Website:** [steveicarus.github.io/iverilog/](https://steveicarus.github.io/iverilog/)
-    *   *Note: While other Verilog simulators (like Verilator or Vivado) can be used, our scripts are pre-configured for Icarus Verilog.*
+    *   **Website:** [steveicarus.github.io/iverilog/](https://steveicarus.github.io/iverilog/)
 
 ### Installation
-
-Clone the repository and install the required Python dependencies:
 
 ```bash
 git clone git@github.com:niujuxin/ReChisel.git
@@ -203,7 +200,8 @@ out[22] = ~a ^ c;
 
 ### Ensuring Verilog Compatibility
 
-A key challenge is ensuring that the Verilog generated from Chisel is compatible with the provided Verilog testbenches. Standard Chisel practices can introduce incompatibilities (e.g., I/O port naming, implicit clock/reset signals). To address this, we instruct the LLM to follow specific coding patterns.
+
+The SBT compiler compiles Chisel code into Verilog code. The Verilog code is then tested on the benchmark; if the Verilog code passes the tests, the Chisel code is considered correct. However, compiling Chisel code with the SBT compiler can lead to some compatibility issues.
 
 1.  **No I/O Bundles:**
     *   **Problem:** Using a `Bundle` for I/O ports causes the Chisel compiler to add a prefix (e.g., `io_`) to all port names, breaking the testbench.
