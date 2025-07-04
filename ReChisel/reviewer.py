@@ -1,5 +1,5 @@
 
-from langchain_core.messages import SystemMessage, AIMessage
+from langchain_core.messages import SystemMessage, AIMessage, HumanMessage
 
 from ReChisel.chisel_code import ChiselCode
 from ReChisel.llms import get_llm_client, llm_call_with_retry
@@ -45,7 +45,8 @@ class Reviewer:
         self._log("Preparing messages for reflection.")
         messages = [
             self._reflection_system_prompt(verify_result),
-            collect_verify_feedback(testcase, verify_result, chisel_code)
+            HumanMessage(testcase.specification),
+            collect_verify_feedback(verify_result, chisel_code)
         ]
         self._log(f"Calling LLM for reflection with model {self._model}.")
         client = get_llm_client(self._model)

@@ -1,3 +1,4 @@
+from typing import Optional
 from ReChisel.chisel_code import ChiselCode
 from ReChisel.llms import get_llm_client, llm_call_with_retry
 from ReChisel.testcase import Testcase
@@ -75,14 +76,25 @@ class Generator:
             self, 
             reviewer_response: AIMessage, 
             verify_result: VerifyResult, 
-            chisel_code: ChiselCode
+            chisel_code: ChiselCode,
+            in_context_history: Optional[HumanMessage] = None
     ) -> AIMessage:
+        
         self._log("Preparing messages for correction generation.")
+        # Basic messages for correction generation
         messages = [
             self._correction_system_prompt(verify_result),
-            collect_verify_feedback(self._testcase, verify_result, chisel_code),
-            HumanMessage(reviewer_response.content)
+            HumanMessage(self._testcase.specification),
         ]
+        # If in-context history is provided, include it in the messages
+        if in_context_history is not None:
+            messages.append(in_context_history)
+        # This attempt.
+        messages.extend([
+            collect_verify_feedback(verify_result, chisel_code),
+            HumanMessage(reviewer_response.content)
+        ])
+        
         self._log(f"Calling LLM for correction generation with model {self._correction_model}.")
         client = get_llm_client(self._correction_model)
         response = llm_call_with_retry(client, messages)

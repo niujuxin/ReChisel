@@ -257,7 +257,6 @@ def verify(
 
 
 def collect_verify_feedback(
-        testcase: Testcase,
         verify_result: VerifyResult,
         chisel_code: ChiselCode
 ) -> HumanMessage:
@@ -272,37 +271,29 @@ def collect_verify_feedback(
                 f"stderr: \n{cmd_exec_result.stderr}\n"
             )
 
-
+    msg = (
+        f"# Chisel code:\n\n"
+        f"```\n{chisel_code.raw}\n```\n\n"
+    )
     # The Chisel code has syntax errors and is unable to compile to Verilog.
     if not verify_result.chisel_compile_to_verilog_success:
-        return HumanMessage(
-            f"# Specification:\n\n"
-            f"```\n{testcase.specification}\n```\n\n"
-            f"# Chisel code:\n\n"
-            f"```\n{chisel_code.raw}\n```\n\n"
+        msg += (
             f"# Chisel compilation (`sbt` command) error messages:\n\n"
             f"```\n{__format_cmd_exec_message(verify_result.sbt_cmd_exec_result)}\n```\n\n"
         )
     # The Chisel code is able to compile to Verilog, but the Verilog code is incompatible with other codes and unable to compile.
     elif not verify_result.verilog_compile_success:
-        return HumanMessage(
-            f"# Specification:\n\n"
-            f"```\n{testcase.specification}\n```\n\n"
-            f"# Chisel code:\n\n"
-            f"```\n{chisel_code.raw}\n```\n\n"
+        msg += (
             f"# Verilog compilation (`iverilog` command) error messages:\n\n"
             f"```\n{__format_cmd_exec_message(verify_result.iv_cmd_exec_result)}\n```\n\n"
         )
     # The Verilog code is able to compile and run, but the functionality is incorrect.
     elif not verify_result.functionality_correct:
-        return HumanMessage(
-            f"# Specification:\n\n"
-            f"```\n{testcase.specification}\n```\n\n"
-            f"# Chisel code:\n\n"
-            f"```\n{chisel_code.raw}\n```\n\n"
-            # TODO: For functional errors, the current benchmark simulation result only points out that 
-            # the function point is inconsistent, but does not provide more information about the error. 
-            # Therefore, there is no meaningful feedback for functional errors.
-        )
+        # TODO: For functional errors, the current benchmark simulation result only points out that 
+        # the function point is inconsistent, but does not provide more information about the error. 
+        # Therefore, there is no meaningful feedback for functional errors.
+        pass
     else:
         raise ValueError("Unexpected verification result: functionality_correct is True, the code should not reach here.")
+
+    return HumanMessage(msg)

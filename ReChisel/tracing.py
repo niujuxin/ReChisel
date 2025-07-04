@@ -54,7 +54,7 @@ class Tracing:
         else:
             messages = [
                 SystemMessage(self._llm_summary_system_prompt),
-                collect_verify_feedback(self.testcase, verify_result, chisel_code),
+                collect_verify_feedback(verify_result, chisel_code),
                 HumanMessage(f"# Reviewer Response:\n\n{reviewer_response.content}")
             ]
             client = get_llm_client(self._llm_summary_model)
