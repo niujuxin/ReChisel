@@ -2,9 +2,9 @@
 # ReChisel: Effective Automatic Chisel Code Generation by LLM with Reflection
 
 
-This repository contains the official implementation for the paper **"ReChisel: Effective Automatic Chisel Code Generation by LLM with Reflection"**, accepted at DAC 2025.
+This repository contains the implementation for the paper **"ReChisel: Effective Automatic Chisel Code Generation by LLM with Reflection"**, accepted at DAC 2025.
 
-ReChisel is a novel framework that enhances Large Language Models (LLMs) for hardware design by enabling them to automatically generate and verify Chisel code. The core of ReChisel is a **reflection mechanism**, where the LLM iteratively analyzes compilation and simulation feedback to correct its own code, significantly improving the success rate of generating functionally correct hardware designs.
+ReChisel is a system that enhances Large Language Models (LLMs) for hardware design by enabling them to automatically generate and verify Chisel code. The core of ReChisel is a **reflection mechanism**, where the LLM iteratively analyzes compilation and simulation feedback to correct its own code, significantly improving the success rate of generating functionally correct hardware designs.
 
 - [arXiV] [2505.19734](https://arxiv.org/abs/2505.19734) 
 - [DAC 2025 Presentation Slides](assets/slides.pdf)
