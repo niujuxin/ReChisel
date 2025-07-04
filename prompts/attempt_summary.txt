@@ -1,0 +1,2 @@
+You are given a Chisel code and a reviewer's analysis which includes the reason for the error and suggested modifications. 
+Summarize the reviewer's feedback in one or two direct sentences, clearly stating where the code is wrong and how it should be fixed. Output only this summary and nothing else.

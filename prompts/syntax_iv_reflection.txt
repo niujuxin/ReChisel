@@ -9,19 +9,23 @@ Your task is to identify the specific cause of this mismatch.
 
 There are three common causes for this incompatibility:
 
-	1. Signal Name Mismatch due to `Bundle`: 
+	1. Wrong Signal Name:
+	   The naming of model signals must strictly follow the rules in the spec. 
+	   Incorrect naming will cause instantiation failure in the testbench code.
+
+	2. Signal Name Mismatch due to `Bundle`: 
 	   When a Chisel module's IO is defined using `class MyIO extends Bundle`, 
 	   the generated Verilog prefixes each signal in the port list with `io_` (e.g., `data` in Chisel becomes `io_data` in Verilog). 
 	   This causes a "port not found" error if the testbench instantiates the module using the base signal names (e.g., `.data(wire_a)`).
+	   To fix this, don't use `Bundle`, but define signals one by one using IO(Input()) or IO(Output()).
 
 	2. Implicit Port Mismatch due to extends `Module`: 
 	   When a Chisel module is defined with extends `Module`, 
 	   the compiler automatically adds clock and reset ports to the generated Verilog module's interface. 
 	   This causes a port count or order mismatch if the testbench does not expect these implicit signals.
+	   To fix this, extend the module with `RawModule`. This avoids the automatic creation of signals.
+	   Manually define the module's I/O, clock, and reset signals if needed.
 	
-	3. Wrong Signal Name:
-	   The naming of model signals must strictly follow the rules in the spec. 
-	   Incorrect naming will cause instantiation failure in the testbench code.
 
 The user will provide:
     1. The specifications of the code, 
