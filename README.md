@@ -54,13 +54,11 @@ pip install -r requirements.txt
 
 ### Environment Variables
 
-The framework uses APIs from OpenAI and AWS (for Anthropic's Claude on Bedrock). Please configure your environment variables accordingly.
-
 ```bash
 # For OpenAI API
 export OPENAI_API_KEY="your_openai_api_key"
 
-# For AWS Bedrock (using Claude)
+# For Claude AWS Bedrock
 export AWS_ACCESS_KEY_ID="your_aws_access_key_id"
 export AWS_SECRET_ACCESS_KEY="your_aws_secret_access_key"
 ```
@@ -68,26 +66,6 @@ export AWS_SECRET_ACCESS_KEY="your_aws_secret_access_key"
 ## 🚀 Quickstart: Using the ReChisel CLI
 
 The `rechisel_cli.py` script provides a complete, end-to-end pipeline for generating and verifying Chisel code from a natural language specification.
-
-Below is an example of a ReChisel CLI command, using `benchmarks/VerilogEval_Prob030/` as an example:
-
-```bash
-python rechisel_cli.py \
---prob-id Prob030_popcount255 \
---specification benchmarks/VerilogEval_Prob030/Prob030_popcount255_spec.txt \
---reference benchmarks/VerilogEval_Prob030/Prob030_popcount255_ref.sv \
---testbench benchmarks/VerilogEval_Prob030/Prob030_popcount255_tb.sv \
---top-module-name TopModule \
---bm-type verilog-eval \
---use-in-context-history \
---use-llm-summary \
---verifier-working-dir output/VerilogEval_Prob030 \
---output output/VerilogEval_Prob030/result.json \
---verbose
-```
-
-This command will initiate the iterative generation and reflection process, with all intermediate procedures and the final result saved to the `output/VerilogEval_Prob030/result.json` path.
-`sample_result_by_rechisel_cli.py` is the sample result of the above command. It shows the output produced by the ReChisel CLI.
 
 
 <details>
@@ -119,6 +97,27 @@ options:
 ```
 
 </details>
+
+
+Below is an example of a ReChisel CLI command, using `benchmarks/VerilogEval_Prob030/` as an example:
+
+```bash
+python rechisel_cli.py \
+--prob-id Prob030_popcount255 \
+--specification benchmarks/VerilogEval_Prob030/Prob030_popcount255_spec.txt \
+--reference benchmarks/VerilogEval_Prob030/Prob030_popcount255_ref.sv \
+--testbench benchmarks/VerilogEval_Prob030/Prob030_popcount255_tb.sv \
+--top-module-name TopModule \
+--bm-type verilog-eval \
+--use-in-context-history \
+--use-llm-summary \
+--verifier-working-dir output/VerilogEval_Prob030 \
+--output output/VerilogEval_Prob030/result.json \
+--verbose
+```
+
+This command will initiate the iterative generation and reflection process, with all intermediate procedures and the final result saved to the `output/VerilogEval_Prob030/result.json` path.
+`sample_result_by_rechisel_cli.py` is the sample result of the above command. It shows the output produced by the ReChisel CLI.
 
 ## 🎓 Interactive Tutorials (Jupyter Notebooks)
 
